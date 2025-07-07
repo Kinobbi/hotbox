@@ -1,0 +1,34 @@
+#----------------------------------------------------------------------------------------------------------
+#
+# AUTOMATICALLY GENERATED FILE TO BE USED BY W_HOTBOX
+#
+# NAME: Change Hues
+#
+#----------------------------------------------------------------------------------------------------------
+
+import nukescripts
+import colorsys
+
+
+for i in nuke.selectedNodes():
+
+for i, item in enumerate(backdrops):
+
+    rainbow = (float(i) * (1 / float(len(backdrops))))
+    # convert TileColor to HSV
+    originalTileColor = item.knob('tile_color').value()
+    originalRGB = [(0xFF & originalTileColor >>  i) / 255.0 for i in [24,16,8]]
+    originalHSV = colorsys.rgb_to_hsv(originalRGB[0],originalRGB[1],originalRGB[2])
+
+    # modify HSV
+    hue = rainbow
+    saturation = 0.3
+    value = 0.2
+
+    # convert HSV to TileColor
+    newHSV =  [hue,saturation,value]
+    newRGB = colorsys.hsv_to_rgb(newHSV[0],newHSV[1],newHSV[2])
+    newTileColor = int('%02x%02x%02x%02x' % (newRGB[0]*255,newRGB[1]*255,newRGB[2]*255,255),16)
+
+    # set new Tile Color
+    item.knob('tile_color').setValue(newTileColor)
