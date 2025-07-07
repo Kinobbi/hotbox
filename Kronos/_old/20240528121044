@@ -1,0 +1,513 @@
+#----------------------------------------------------------------------------------------------------------
+#
+# AUTOMATICALLY GENERATED FILE TO BE USED BY W_HOTBOX
+#
+# NAME: Non-NukeX
+#
+#----------------------------------------------------------------------------------------------------------
+
+'''Version 002. Last updated: 16/05/2024'''
+'''BUGS: Enabled/disable on some knobs are broken. Can be fixed by copying+pasting.'''
+
+
+# Select and group nodes individually in loop
+selection = nuke.selectedNodes()
+[deselect.setSelected(False) for deselect in selection]
+
+for each in selection:
+    # Creating group
+    nodeName = each['name'].value()
+    each.setSelected(True)
+    group = nuke.collapseToGroup()
+    group['name'].setValue(nodeName)
+
+    with group:
+        [select.setSelected(True) for select in nuke.allNodes('Kronos')]
+
+        # Labelling and positioning inputs
+        for num in nuke.selectedNodes():
+            xPos = float(num['xpos'].getValue() )
+            yPos = float(num['ypos'].getValue() )
+
+        source = nuke.toNode('Input1')
+        source['name'].setValue('Source')
+        source['xpos'].setValue(xPos-270)
+        source['ypos'].setValue(yPos-150)
+
+        matte = nuke.toNode('Input2')
+        matte['name'].setValue('Matte')
+        matte['xpos'].setValue(xPos-135)
+        matte['ypos'].setValue(yPos-150)
+
+        MoScr = nuke.toNode('Input3')
+        MoScr['name'].setValue('MoScr')
+        MoScr['xpos'].setValue(xPos)
+        MoScr['ypos'].setValue(yPos-150)
+
+        FgVecs = nuke.toNode('Input4')
+        FgVecs['name'].setValue('FgVecs')
+        FgVecs['xpos'].setValue(xPos+135)
+        FgVecs['ypos'].setValue(yPos-150)
+
+        BgVecs = nuke.toNode('Input5')
+        BgVecs['name'].setValue('BgVecs')
+        BgVecs['xpos'].setValue(xPos+270)
+        BgVecs['ypos'].setValue(yPos-150)
+
+
+        # Obtaining Kronos knob values
+        for node in nuke.selectedNodes():
+            def valueFloat(label):
+                return float(node.knob(label).getValue())
+            def valueInt(label):
+                return int(node.knob(label).getValue())
+            def valueEnum(label):
+                return int(node.knob(label).getValue())
+            def valueStr(label):
+                return str(node.knob(label).value())
+            def valueBool(label):
+                return bool(node.knob(label).value())
+
+        # Function to set expression links
+        def expression(label):
+            node.knob(label).setExpression('parent.'+label)
+
+
+
+    # Creating user knobs
+    tab = nuke.Tab_Knob('Kronos', 'Kronos')
+    group.addKnob(tab)
+
+    name = nuke.Text_Knob('gpuName', 'Local GPU:')
+    name.setValue(valueStr('gpuName'))
+    group.addKnob(name)
+    expression('gpuName')
+
+    GPU = nuke.Disable_Knob('useGPUIfAvailable', 'Use GPU if available')
+    GPU.setDefaultValue([True])
+    GPU.setValue(valueBool('useGPUIfAvailable'))
+    GPU.setFlag(nuke.STARTLINE)
+    GPU.setFlag(nuke.ALWAYS_SAVE)
+    group.addKnob(GPU)
+    expression('useGPUIfAvailable')
+
+    line = nuke.Text_Knob('', '')
+    group.addKnob(line)
+
+    inputFirst = nuke.Int_Knob('input.first', 'Input Range')
+    inputFirst.setDefaultValue([1])
+    inputFirst.setValue(valueInt('input.first'))
+    inputFirst.setFlag(nuke.ALWAYS_SAVE)
+    group.addKnob(inputFirst)
+    expression('input.first')
+
+    inputLast = nuke.Int_Knob('input.last', '')
+    inputLast.setDefaultValue([100])
+    inputLast.setValue(valueInt('input.last'))
+    inputLast.clearFlag(nuke.STARTLINE)
+    inputLast.setFlag(nuke.ALWAYS_SAVE)
+    group.addKnob(inputLast)
+    expression('input.last')
+
+    resetFramerange = '''
+node = nuke.thisNode()
+
+node['input.first'].setValue(nuke.Root().firstFrame())
+node['input.last'].setValue(nuke.Root().lastFrame())
+'''
+
+    reset = nuke.PyScript_Knob('resetInputRange', 'Reset', resetFramerange)
+    group.addKnob(reset)
+
+    channels = nuke.ChannelMask_Knob('')
+    channels.setName('retimedChannels')
+    channels.setLabel('Channels')
+    channels.setValue(valueStr('retimedChannels'))
+    channels.setFlag(0x00000001 | 0x00000002)
+    channels.setFlag(nuke.ALWAYS_SAVE)
+    group.addKnob(channels)
+    expression('retimedChannels')
+
+
+    # Creating custom knobs in internal Kronos node for knobChanged to work
+    with group:
+        [select.setSelected(True) for select in nuke.allNodes('Kronos')]
+        for custom in nuke.selectedNodes():
+            method = nuke.Enumeration_Knob('interpolation2', 'Method', ['Frame', 'Blend', 'Motion'])
+            method.setDefaultValue([2])
+            method.setValue(custom['interpolation'].value())
+            method.setFlag(nuke.ALWAYS_SAVE)
+            custom.addKnob(method)
+            custom['interpolation'].setExpression('interpolation2')
+
+            timing = nuke.Enumeration_Knob('timing3', 'Timing', ['Output Speed', 'Input Speed', 'Frame'])
+            timing.setDefaultValue([0])
+            timing.setValue(custom['timing2'].value())
+            timing.setFlag(nuke.ALWAYS_SAVE)
+            custom.addKnob(timing)
+            custom['timing2'].setExpression('timing3')
+
+            motion = nuke.Enumeration_Knob('motionEstimation2', 'Motion', ['Regularized', 'Local'])
+            motion.setDefaultValue([0])
+            motion.setValue(custom['motionEstimation'].value())
+            motion.setFlag(nuke.ALWAYS_SAVE)
+            custom.addKnob(motion)
+            custom['motionEstimation'].setExpression('motionEstimation2')
+
+            auto = nuke.Disable_Knob('autoShutterTime2', 'Automatic Shutter Time')
+            auto.setValue(custom['autoShutterTime'].value())
+            auto.setFlag(nuke.STARTLINE)
+            auto.setFlag(nuke.ALWAYS_SAVE)
+            custom.addKnob(auto)
+            custom['autoShutterTime'].setExpression('autoShutterTime2')
+
+    def linkKnob(name,label):
+        with group:
+            [select.setSelected(True) for select in nuke.allNodes('Kronos')]
+            knob = name
+            for node in nuke.selectedNodes():
+                target = '{}.{}'.format(node.name(), name)
+        link = nuke.Link_Knob(name, label)
+        link.setLink(target)
+        group.addKnob(link)
+
+    # Creating 'Method' and 'Timing' knobs
+    linkKnob('interpolation2', 'Method')
+    linkKnob('timing3', 'Timing')
+
+
+
+    # Creating 'Timing' type knobs for knobChanged
+    timingOutput = nuke.Double_Knob('timingOutputSpeed', 'Output Speed')
+    timingOutput.setRange(0, 5)
+    timingOutput.setDefaultValue([0.5])
+    timingOutput.setValue(valueFloat('timingOutputSpeed') )
+    timingOutput.setFlag(nuke.ALWAYS_SAVE)
+    group.addKnob(timingOutput)
+    expression('timingOutputSpeed')
+
+    timingInput = nuke.Double_Knob('timingInputSpeed', 'Input Speed')
+    timingInput.setRange(0, 5)
+    timingInput.setDefaultValue([0.5])
+    timingInput.setValue(valueFloat('timingInputSpeed') )
+    timingInput.setFlag(nuke.ALWAYS_SAVE)
+    group.addKnob(timingInput)
+    expression('timingInputSpeed')
+
+    timingFrame = nuke.Double_Knob('timingFrame2', 'Frame')
+    timingFrame.setRange(0, 1000)
+    timingFrame.setDefaultValue([1])
+    timingFrame.setValue(valueInt('timingFrame2') )
+    timingFrame.setFlag(nuke.ALWAYS_SAVE)
+    group.addKnob(timingFrame)
+    expression('timingFrame2')
+
+
+    # Linking 'Motion' knob
+    linkKnob('motionEstimation2', 'Motion')
+
+
+    # Creating 'Detail' and 'Strength' knobs for knobChanged
+    detailReg = nuke.Double_Knob('vectorDetailReg', 'Vector Detail')
+    detailReg.setRange(0.01, 1)
+    detailReg.setDefaultValue([0.3])
+    detailReg.setValue(valueFloat('vectorDetailReg') )
+    detailReg.setFlag(nuke.ALWAYS_SAVE)
+    group.addKnob(detailReg)
+    expression('vectorDetailReg')
+
+    strength = nuke.Double_Knob('strengthReg', 'Strength')
+    strength.setRange(0, 1.5)
+    strength.setDefaultValue([1.5])
+    strength.setValue(valueFloat('strengthReg') )
+    strength.setFlag(nuke.ALWAYS_SAVE)
+    group.addKnob(strength)
+    expression('strengthReg')
+
+    detailLocal = nuke.Double_Knob('vectorDetailLocal', 'Vector Detail')
+    detailLocal.setRange(0.01, 1)
+    detailLocal.setDefaultValue([0.2])
+    detailLocal.setValue(valueFloat('vectorDetailLocal') )
+    detailLocal.setFlag(nuke.ALWAYS_SAVE)
+    group.addKnob(detailLocal)
+    expression('vectorDetailLocal')
+
+    smooth = nuke.Double_Knob('smoothnessLocal', 'Smoothness')
+    smooth.setRange(0.01, 1)
+    smooth.setDefaultValue([0.5])
+    smooth.setValue(valueFloat('smoothnessLocal') )
+    smooth.setFlag(nuke.ALWAYS_SAVE)
+    group.addKnob(smooth)
+    expression('smoothnessLocal')
+
+
+    # Creating 'Filter' knob
+    filter = nuke.Enumeration_Knob('resampleType', 'Filter', ['Bilinear', 'Lanczos4', 'Lanczos6'])
+    filter.setDefaultValue([0])
+    filter.setValue(valueEnum('resampleType') )
+    filter.setFlag(nuke.ALWAYS_SAVE)
+    group.addKnob(filter)
+    expression('resampleType')
+
+
+
+    # Begin 'Shutter' Group
+    shutterBegin = nuke.Tab_Knob('shutterBegin', 'Shutter', nuke.TABBEGINCLOSEDGROUP)
+    group.addKnob(shutterBegin)
+
+    samples = nuke.Int_Knob('shutterSamples', 'Shutter Samples')
+    samples.setDefaultValue([1])
+    samples.setValue(valueInt('shutterSamples') )
+    samples.setFlag(nuke.ALWAYS_SAVE)
+    group.addKnob(samples)
+    expression('shutterSamples')
+
+    time = nuke.Double_Knob('shutterTime', 'Shutter Time')
+    time.setRange(0,10)
+    time.setDefaultValue([0])
+    time.setValue(valueFloat('shutterTime') )
+    time.setFlag(nuke.ALWAYS_SAVE)
+    group.addKnob(time)
+    expression('shutterTime')
+
+    # Linking 'Auto' knob
+    linkKnob('autoShutterTime2', 'Automatic Shutter Time')
+
+
+    # End 'Shutter' group
+    shutterEnd = nuke.Tab_Knob('shutterEnd', 'Shutter', nuke.TABENDGROUP)
+    group.addKnob(shutterEnd)
+
+
+    # Creating 'Output' and 'Matte' knobs
+    output = nuke.Enumeration_Knob('output', 'Filter', ['Result', 'Matte', 'Foreground', 'Background'])
+    output.setDefaultValue([0])
+    output.setValue(valueEnum('output') )
+    output.setFlag(nuke.ALWAYS_SAVE)
+    group.addKnob(output)
+    expression('output')
+
+    matte = nuke.Enumeration_Knob('matteChannel', 'Matte', ['None', 'Source Alpha', 'Source Inverted Alpha', 'Matte Luminance', 'Matte Inverted Luminance', 'Matte Alpha', 'Matte Inverted Alpha'])
+    matte.setDefaultValue([0])
+    matte.setValue(valueEnum('matteChannel') )
+    matte.setFlag(nuke.ALWAYS_SAVE)
+    group.addKnob(matte)
+    expression('matteChannel')
+
+
+    # Begin 'Advanced' Group (CONTAINS ANOTHER GROUP)
+    advBegin = nuke.Tab_Knob('advBegin', 'Advanced', nuke.TABBEGINCLOSEDGROUP)
+    group.addKnob(advBegin)
+
+    flicker = nuke.Disable_Knob('flickerCompensation', 'Flicker Compensation')
+    flicker.setValue(valueBool('flickerCompensation'))
+    flicker.setFlag(nuke.ALWAYS_SAVE)
+    group.addKnob(flicker)
+    expression('flickerCompensation')
+
+
+    # Begin 'Tolerances' group
+    tolBegin = nuke.Tab_Knob('tolBegin', 'Tolerances', nuke.TABBEGINCLOSEDGROUP)
+    group.addKnob(tolBegin)
+
+    red = nuke.Double_Knob('weightRed', 'Weight Red')
+    red.setRange(0,1)
+    red.setDefaultValue([0.3])
+    red.setValue(valueFloat('weightRed') )
+    red.setFlag(nuke.ALWAYS_SAVE)
+    group.addKnob(red)
+    expression('weightRed')
+
+    green = nuke.Double_Knob('weightGreen', 'Weight Green')
+    green.setRange(0,1)
+    green.setDefaultValue([0.6])
+    green.setValue(valueFloat('weightGreen') )
+    green.setFlag(nuke.ALWAYS_SAVE)
+    group.addKnob(green)
+    expression('weightGreen')
+
+    blue = nuke.Double_Knob('weightBlue', 'Weight Blue')
+    blue.setRange(0,1)
+    blue.setDefaultValue([0.1])
+    blue.setValue(valueFloat('weightBlue') )
+    blue.setFlag(nuke.ALWAYS_SAVE)
+    group.addKnob(blue)
+    expression('weightBlue')
+
+    # End 'Tolerances' group
+    tolEnd = nuke.Tab_Knob('tolEnd', 'Tolerances', nuke.TABENDGROUP)
+    group.addKnob(tolEnd)
+
+
+    # Creating last knobs
+    spacing = nuke.Int_Knob('vectorSpacing', 'Vector Spacing')
+    spacing.setDefaultValue([20])
+    spacing.setValue(valueInt('vectorSpacing'))
+    spacing.setFlag(nuke.ALWAYS_SAVE)
+    group.addKnob(spacing)
+    expression('vectorSpacing')
+
+
+    # Creating 'Overlay' knob separate from function to prevent starting on new line
+    with group:
+        [select.setSelected(True) for select in nuke.allNodes('Kronos')]
+        for custom in nuke.selectedNodes():
+            overlay = nuke.Disable_Knob('showVectors2', 'Overlay Vectors')
+            overlay.setValue(custom['showVectors'].value())
+            overlay.setFlag(nuke.ALWAYS_SAVE)
+            custom.addKnob(overlay)
+            custom['showVectors'].setExpression('showVectors2')
+
+            knob = 'showVectors2'
+            for node in nuke.selectedNodes():
+                target = '{}.{}'.format(node.name(), 'showVectors2')
+    link = nuke.Link_Knob('showVectors2', 'Overlay Vectors')
+    link.clearFlag(nuke.STARTLINE)
+    link.setLink(target)
+    group.addKnob(link)
+
+
+    # End 'Advanced' group
+    advEnd = nuke.Tab_Knob('advEnd', 'Advanced', nuke.TABENDGROUP)
+    group.addKnob(advEnd)
+
+
+
+    # Setting visibility of knobs
+    with group:
+        [select.setSelected(True) for select in nuke.allNodes('Kronos')]
+        node = nuke.selectedNode()
+        parent = node.parent()
+
+        # 'Motion' Knob
+        for label in ['motionEstimation2', 'vectorDetailReg', 'strengthReg', 'vectorDetailLocal', 'smoothnessLocal', 'resampleType', 'output', 'matteChannel', 'flickerCompensation', 'weightRed', 'weightGreen', 'weightBlue', 'vectorSpacing', 'showVectors2']:
+            if node['interpolation2'].value() == 'Motion':
+                parent.knob(label).setEnabled(True)
+            elif node['interpolation2'].value() == 'Frame' or 'Blend':
+                parent.knob(label).setEnabled(False)
+
+        # 'Timing' Knob
+        if node['timing3'].value() == 'Output Speed':
+            parent['timingOutputSpeed'].setVisible(True)
+            parent['timingInputSpeed'].setVisible(False)
+            parent['timingFrame2'].setVisible(False)
+        elif node['timing3'].value() == 'Input Speed':
+            parent['timingOutputSpeed'].setVisible(False)
+            parent['timingInputSpeed'].setVisible(True)
+            parent['timingFrame2'].setVisible(False)
+        elif node['timing3'].value() == 'Frame':
+            parent['timingOutputSpeed'].setVisible(False)
+            parent['timingInputSpeed'].setVisible(False)
+            parent['timingFrame2'].setVisible(True)
+
+        # 'Motion' Knob
+        if node['motionEstimation2'].value() == 'Regularized':
+            parent['vectorDetailReg'].setVisible(True)
+            parent['strengthReg'].setVisible(True)
+            parent['vectorDetailLocal'].setVisible(False)
+            parent['smoothnessLocal'].setVisible(False)
+        elif node['motionEstimation2'].value() == 'Local':
+            parent['vectorDetailReg'].setVisible(False)
+            parent['strengthReg'].setVisible(False)
+            parent['vectorDetailLocal'].setVisible(True)
+            parent['smoothnessLocal'].setVisible(True)
+
+        # 'Auto' Knob
+        if node['autoShutterTime2'].value() == 0:
+            parent['shutterTime'].setEnabled(True)
+        elif node['autoShutterTime2'].value() == 1:
+            parent['shutterTime'].setEnabled(False)
+
+        # 'Overlay' Knob
+        if node['showVectors2'].value() == 0:
+            parent['vectorSpacing'].setEnabled(False)
+        elif node['showVectors2'].value() == 1:
+            parent['vectorSpacing'].setEnabled(True)
+
+
+    # Defining knobChanged
+    knobChange = '''
+node = nuke.thisNode()
+knob = nuke.thisKnob()
+parent = node.parent()
+
+# 'Motion' Knob
+for label in ['motionEstimation2', 'vectorDetailReg', 'strengthReg', 'vectorDetailLocal', 'smoothnessLocal', 'resampleType', 'output', 'matteChannel', 'flickerCompensation', 'weightRed', 'weightGreen', 'weightBlue', 'vectorSpacing', 'showVectors2']:
+    if node['interpolation2'].value() == 'Motion':
+        parent.knob(label).setEnabled(True)
+
+        if node['motionEstimation2'].value() == 'Regularized':
+            node['motionEstimation2'].setValue('Local')
+            node['motionEstimation2'].setValue('Regularized')
+        elif node['motionEstimation2'].value () == 'Local':
+            node['motionEstimation2'].setValue('Regularized')
+            node['motionEstimation2'].setValue('Local')
+        if node['showVectors2'].value() == 0:
+            node['showVectors2'].setValue(1)
+            node['showVectors2'].setValue(0)
+        elif node['showVectors2'].value() == 1:
+            node['showVectors2'].setValue(0)
+            node['showVectors2'].setValue(1)
+
+    elif node['interpolation2'].value() == 'Frame' or 'Blend':
+        parent.knob(label).setEnabled(False)
+
+        if node['motionEstimation2'].value() == 'Regularized':
+            node['motionEstimation2'].setValue('Local')
+            node['motionEstimation2'].setValue('Regularized')
+        elif node['motionEstimation2'].value () == 'Local':
+            node['motionEstimation2'].setValue('Regularized')
+            node['motionEstimation2'].setValue('Local')
+        if node['showVectors2'].value() == 0:
+            node['showVectors2'].setValue(1)
+            node['showVectors2'].setValue(0)
+        elif node['showVectors2'].value() == 1:
+            node['showVectors2'].setValue(0)
+            node['showVectors2'].setValue(1)
+
+
+# 'Timing' Knob
+if knob.name()== 'timing3' and knob.value() == 'Output Speed':
+    parent['timingOutputSpeed'].setVisible(True)
+    parent['timingInputSpeed'].setVisible(False)
+    parent['timingFrame2'].setVisible(False)
+elif knob.name()== 'timing3' and knob.value() == 'Input Speed':
+    parent['timingOutputSpeed'].setVisible(False)
+    parent['timingInputSpeed'].setVisible(True)
+    parent['timingFrame2'].setVisible(False)
+elif knob.name()== 'timing3' and knob.value() == 'Frame':
+    parent['timingOutputSpeed'].setVisible(False)
+    parent['timingInputSpeed'].setVisible(False)
+    parent['timingFrame2'].setVisible(True)
+
+# 'Motion' Knob
+if knob.name()== 'motionEstimation2' and knob.value() == 'Regularized':
+    parent['vectorDetailReg'].setVisible(True)
+    parent['strengthReg'].setVisible(True)
+    parent['vectorDetailLocal'].setVisible(False)
+    parent['smoothnessLocal'].setVisible(False)
+elif knob.name()== 'motionEstimation2' and knob.value() == 'Local':
+    parent['vectorDetailReg'].setVisible(False)
+    parent['strengthReg'].setVisible(False)
+    parent['vectorDetailLocal'].setVisible(True)
+    parent['smoothnessLocal'].setVisible(True)
+
+# 'Auto' Knob
+if knob.name() == 'autoShutterTime2' and knob.value() == 0:
+    parent['shutterTime'].setEnabled(True)
+elif knob.name() == 'autoShutterTime2' and knob.value() == 1:
+    parent['shutterTime'].setEnabled(False)
+
+# 'Overlay' Knob
+if knob.name() == 'showVectors2' and knob.value() == 0:
+    parent['vectorSpacing'].setEnabled(False)
+elif knob.name() == 'showVectors2' and knob.value() == 1:
+    parent['vectorSpacing'].setEnabled(True)
+'''
+
+    node['knobChanged'].setValue(knobChange)
+
+
+
+    # Deselecting group so code can run on individual nodes
+    group.setSelected(False)
